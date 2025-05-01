@@ -1,10 +1,17 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import react from '@vitejs/plugin-react';
+import dts from 'vite-plugin-dts';
 import { isPassthroughVar } from '@repo/env-config';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    dts({
+      insertTypesEntry: true,
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+    }),
+  ],
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
@@ -19,6 +26,7 @@ export default defineConfig({
           react: 'React',
           'react-dom': 'ReactDOM',
         },
+        preserveModules: true,
       },
     },
     minify: true,

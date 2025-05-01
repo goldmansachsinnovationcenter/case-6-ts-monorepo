@@ -10,6 +10,7 @@ coverage
 
 # build
 dist
+.turbo
 
 # misc
 .DS_Store

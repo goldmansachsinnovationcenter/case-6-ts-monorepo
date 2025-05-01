@@ -17,6 +17,11 @@ export const ENV_VARS = {
 } as const;
 
 /**
+ * Type for environment variable keys
+ */
+export type EnvVarKey = keyof typeof ENV_VARS;
+
+/**
  * Check if an environment variable should be passed through (not replaced at build time)
  * @param key Environment variable key
  * @returns Whether the variable should be passed through
@@ -43,4 +48,37 @@ export const getEnvironmentMode = (): EnvironmentMode => {
   if (nodeEnv === 'production') return EnvironmentMode.Production;
   if (nodeEnv === 'test') return EnvironmentMode.Test;
   return EnvironmentMode.Development;
+};
+
+/**
+ * Get an environment variable value
+ * @param key Environment variable key
+ * @param defaultValue Default value if the environment variable is not set
+ * @returns The environment variable value or the default value
+ */
+export const getEnvVar = (key: EnvVarKey, defaultValue: string = ''): string => {
+  return process.env[key] || defaultValue;
+};
+
+/**
+ * Get a passthrough environment variable at runtime
+ * @param key Environment variable key without the PASSTHROUGH_ prefix
+ * @param defaultValue Default value if the environment variable is not set
+ * @returns The environment variable value or the default value
+ */
+export const getPassthroughVar = (key: string, defaultValue: string = ''): string => {
+  return process.env[`${PASSTHROUGH_PREFIX}${key}`] || defaultValue;
+};
+
+/**
+ * Create a map of environment variables for Vite's define option
+ * @param env Environment variables object from Vite's loadEnv
+ * @returns Object with process.env.* keys mapped to JSON stringified values
+ */
+export const createEnvReplacements = (env: Record<string, string>): Record<string, string> => {
+  return Object.fromEntries(
+    Object.entries(env)
+      .filter(([key]) => !isPassthroughVar(key))
+      .map(([key, value]) => [`process.env.${key}`, JSON.stringify(value)])
+  );
 };

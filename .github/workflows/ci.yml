@@ -21,7 +21,7 @@ jobs:
       - name: Setup PNPM
         uses: pnpm/action-setup@v2
         with:
-          version: 8.9.0
+          version: 9.1.0
       
       - name: Get pnpm store directory
         id: pnpm-cache
@@ -57,7 +57,7 @@ jobs:
       - name: Setup PNPM
         uses: pnpm/action-setup@v2
         with:
-          version: 8.9.0
+          version: 9.1.0
       
       - name: Get pnpm store directory
         id: pnpm-cache
@@ -93,7 +93,7 @@ jobs:
       - name: Setup PNPM
         uses: pnpm/action-setup@v2
         with:
-          version: 8.9.0
+          version: 9.1.0
       
       - name: Get pnpm store directory
         id: pnpm-cache

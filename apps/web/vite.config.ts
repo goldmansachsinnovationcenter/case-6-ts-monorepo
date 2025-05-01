@@ -1,22 +1,37 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, UserConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { isPassthroughVar, PASSTHROUGH_PREFIX } from '@repo/env-config';
+import dts from 'vite-plugin-dts';
+import { 
+  isPassthroughVar, 
+  PASSTHROUGH_PREFIX, 
+  createEnvReplacements 
+} from '@repo/env-config';
 
+/**
+ * Vite configuration for web application
+ * 
+ * This configuration:
+ * 1. Loads environment variables based on the current mode
+ * 2. Replaces process.env references with actual values at build time
+ * 3. Preserves variables with PASSTHROUGH_ prefix for runtime loading
+ */
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
+  const env = loadEnv(mode, process.cwd(), 'VITE_');
 
-  const envReplacement = Object.fromEntries(
-    Object.entries(env)
-      .filter(([key]) => !isPassthroughVar(key))
-      .map(([key, value]) => [`process.env.${key}`, JSON.stringify(value)])
-  );
+  const envReplacement = createEnvReplacements(env);
 
   const passthroughVars = Object.keys(env)
     .filter(isPassthroughVar)
     .map(key => key.replace(PASSTHROUGH_PREFIX, ''));
 
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      dts({
+        insertTypesEntry: true,
+        include: ['src/**/*.ts', 'src/**/*.tsx'],
+      }),
+    ],
     define: {
       ...envReplacement,
       '__PASSTHROUGH_VARS__': JSON.stringify(passthroughVars),

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, getApiUrl } from '@repo/ui';
-import { ENV_VARS, PASSTHROUGH_PREFIX } from '@repo/env-config';
+import * as EnvConfig from '@repo/env-config';
 
 const getPassthroughEnv = (key: string): string | undefined => {
   return `[RUNTIME VALUE FOR ${key}]`;
@@ -46,7 +46,7 @@ function App() {
 
       <h2>Passthrough Variables</h2>
       <p>
-        Variables with the <code>{PASSTHROUGH_PREFIX}</code> prefix are not replaced at build time
+        Variables with the <code>{EnvConfig.PASSTHROUGH_PREFIX}</code> prefix are not replaced at build time
         and are loaded from the runtime environment:
       </p>
       <ul>

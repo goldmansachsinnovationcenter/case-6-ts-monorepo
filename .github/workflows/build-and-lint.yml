@@ -1,34 +1,34 @@
-name: CI
+name: Build and Lint
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   build:
+    name: Build Lint Typecheck
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
-      
+
       - name: Setup PNPM
         uses: pnpm/action-setup@v2
         with:
-          version: 8.9.0
-      
+          version: 9.1.0
+
       - name: Get pnpm store directory
         id: pnpm-cache
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-      
+
       - name: Setup pnpm cache
         uses: actions/cache@v3
         with:
@@ -36,17 +36,22 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-      
+
       - name: Install dependencies
         run: pnpm install
-      
-      - name: Lint
-        run: pnpm lint
-      
+
+      - name: Run ESLint
+        run: pnpm turbo run lint
+
       - name: Build
-        run: pnpm build
+        run: pnpm turbo run build
         env:
           NODE_ENV: production
           VITE_EO_CLOUD_API_DOMAIN: ci-api.example.com
           VITE_BIO_S3_BUCKET_NAME: ci-example-bucket
           PASSTHROUGH_SOME_CREDENTIAL: this-will-not-be-replaced
+
+      - name: Type Check
+        run: |
+          echo "Running TypeScript type check for all packages..."
+          pnpm run typecheck

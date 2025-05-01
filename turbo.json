@@ -1,18 +1,28 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": [".env.*", ".env"],
-  "pipeline": {
+  "globalDependencies": [
+    ".env.*",
+    ".env"
+  ],
+  "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**"],
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
+      ],
       "env": [
         "NODE_ENV",
         "EO_CLOUD_API_DOMAIN",
         "BIO_S3_BUCKET_NAME",
-        "PASSTHROUGH_*"
+        "PASSTHROUGH_\\*"
       ]
     },
     "lint": {
+      "outputs": []
+    },
+    "typecheck": {
       "outputs": []
     },
     "dev": {
@@ -22,7 +32,7 @@
         "NODE_ENV",
         "EO_CLOUD_API_DOMAIN",
         "BIO_S3_BUCKET_NAME",
-        "PASSTHROUGH_*"
+        "PASSTHROUGH_\\*"
       ]
     }
   }

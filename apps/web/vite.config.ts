@@ -1,15 +1,23 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
-import { isPassthroughVar, PASSTHROUGH_PREFIX } from '@repo/env-config';
+import { 
+  isPassthroughVar, 
+  PASSTHROUGH_PREFIX, 
+  createEnvReplacements 
+} from '@repo/env-config';
 
+/**
+ * Vite configuration for web application
+ * 
+ * This configuration:
+ * 1. Loads environment variables based on the current mode
+ * 2. Replaces process.env references with actual values at build time
+ * 3. Preserves variables with PASSTHROUGH_ prefix for runtime loading
+ */
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
-  const envReplacement = Object.fromEntries(
-    Object.entries(env)
-      .filter(([key]) => !isPassthroughVar(key))
-      .map(([key, value]) => [`process.env.${key}`, JSON.stringify(value)])
-  );
+  const envReplacement = createEnvReplacements(env);
 
   const passthroughVars = Object.keys(env)
     .filter(isPassthroughVar)

@@ -7,17 +7,19 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@repo/ui": "workspace:*",
     "@repo/env-config": "workspace:*",
+    "@repo/ui": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@types/node": "^20.10.0",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "@vitejs/plugin-react": "^4.2.0",

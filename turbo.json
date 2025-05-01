@@ -1,0 +1,29 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [".env.*", ".env"],
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "env": [
+        "NODE_ENV",
+        "EO_CLOUD_API_DOMAIN",
+        "BIO_S3_BUCKET_NAME",
+        "PASSTHROUGH_*"
+      ]
+    },
+    "lint": {
+      "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "env": [
+        "NODE_ENV",
+        "EO_CLOUD_API_DOMAIN",
+        "BIO_S3_BUCKET_NAME",
+        "PASSTHROUGH_*"
+      ]
+    }
+  }
+}

@@ -1,4 +1,4 @@
-name: CI
+name: Build and Lint
 
 on:
   push:
@@ -41,7 +41,7 @@ jobs:
         run: pnpm install
       
       - name: Run ESLint
-        run: pnpm lint
+        run: pnpm turbo run lint
         
   typecheck:
     name: Type Check
@@ -77,7 +77,11 @@ jobs:
         run: pnpm install
       
       - name: Type Check
-        run: pnpm turbo run typecheck
+        run: |
+          echo "Running TypeScript type check for all packages..."
+          pnpm exec tsc --noEmit --project packages/env-config/tsconfig.json
+          pnpm exec tsc --noEmit --project packages/ui/tsconfig.json
+          pnpm exec tsc --noEmit --project apps/web/tsconfig.json
   
   build:
     name: Build
@@ -113,7 +117,7 @@ jobs:
         run: pnpm install
       
       - name: Build
-        run: pnpm build
+        run: pnpm turbo run build
         env:
           NODE_ENV: production
           VITE_EO_CLOUD_API_DOMAIN: ci-api.example.com

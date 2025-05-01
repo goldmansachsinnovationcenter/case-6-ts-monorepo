@@ -77,6 +77,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       
+      - name: Build packages before type checking
+        run: pnpm turbo run build --filter="@repo/env-config" --filter="@repo/ui"
+        env:
+          NODE_ENV: production
+          VITE_EO_CLOUD_API_DOMAIN: ci-api.example.com
+          VITE_BIO_S3_BUCKET_NAME: ci-example-bucket
+          PASSTHROUGH_SOME_CREDENTIAL: this-will-not-be-replaced
+          
       - name: Type Check
         run: pnpm turbo run typecheck
   

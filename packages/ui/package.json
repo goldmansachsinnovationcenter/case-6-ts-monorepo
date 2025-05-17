@@ -5,11 +5,13 @@
   "main": "./dist/ui.js",
   "module": "./dist/ui.mjs",
   "types": "./dist/index.d.ts",
+  "type": "module",
   "scripts": {
     "build": "vite build",
     "lint": "echo no lint",
     "dev": "vite build --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "react": "^18.2.0"
@@ -18,19 +20,22 @@
     "@repo/env-config": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^14.0.0",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.37",
     "@vitejs/plugin-react": "^4.2.0",
     "eslint": "^8.53.0",
+    "jsdom": "^22.1.0",
     "react": "^18.2.0",
     "typescript": "^5.2.2",
     "vite": "^5.0.0",
-    "vite-plugin-dts": "^4.5.3"
+    "vite-plugin-dts": "^4.5.3",
+    "vitest": "^3.1.3"
   },
   "exports": {
     ".": {
       "import": "./dist/ui.mjs",
-      "require": "./dist/ui.js",
       "types": "./dist/index.d.ts"
     }
   }

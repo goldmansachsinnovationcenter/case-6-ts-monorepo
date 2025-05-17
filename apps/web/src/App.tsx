@@ -2,17 +2,36 @@ import React from 'react';
 import { Button, getApiUrl } from '@repo/ui';
 import { ENV_VARS, PASSTHROUGH_PREFIX } from '@repo/env-config';
 
+// Create an interface for environment variables to make testing easier
+export interface AppEnvironment {
+  apiDomain: string;
+  s3BucketName: string;
+  nodeEnv: string;
+  apiUrl: string;
+}
+
+// Default function to get environment variables from import.meta.env
+export const getAppEnvironment = (): AppEnvironment => {
+  return {
+    apiDomain: import.meta.env.VITE_EO_CLOUD_API_DOMAIN || 'Not defined',
+    s3BucketName: import.meta.env.VITE_BIO_S3_BUCKET_NAME || 'Not defined',
+    nodeEnv: import.meta.env.MODE || 'Not defined',
+    apiUrl: getApiUrl()
+  };
+};
+
 const getPassthroughEnv = (key: string): string | undefined => {
   return `[RUNTIME VALUE FOR ${key}]`;
 };
 
-function App() {
-  const apiDomain = import.meta.env.VITE_EO_CLOUD_API_DOMAIN || 'Not defined';
-  const s3BucketName = import.meta.env.VITE_BIO_S3_BUCKET_NAME || 'Not defined';
-  const nodeEnv = import.meta.env.MODE;
+// Make the App component accept environment as a prop for testing
+interface AppProps {
+  environment?: AppEnvironment;
+}
 
-  const apiUrl = getApiUrl();
-
+function App({ environment }: AppProps) {
+  // Use provided environment (for tests) or get it from import.meta.env
+  const env = environment || getAppEnvironment();
   const passthroughExample = getPassthroughEnv('SOME_CREDENTIAL');
 
   return (
@@ -23,13 +42,13 @@ function App() {
       <p>The following variables are replaced at build time in the application:</p>
       <ul>
         <li>
-          <strong>API Domain:</strong> {apiDomain}
+          <strong>API Domain:</strong> {env.apiDomain}
         </li>
         <li>
-          <strong>S3 Bucket:</strong> {s3BucketName}
+          <strong>S3 Bucket:</strong> {env.s3BucketName}
         </li>
         <li>
-          <strong>Node Environment:</strong> {nodeEnv}
+          <strong>Node Environment:</strong> {env.nodeEnv}
         </li>
       </ul>
 
@@ -40,7 +59,7 @@ function App() {
       </p>
       <ul>
         <li>
-          <strong>API URL from library:</strong> {apiUrl}
+          <strong>API URL from library:</strong> {env.apiUrl}
         </li>
       </ul>
 

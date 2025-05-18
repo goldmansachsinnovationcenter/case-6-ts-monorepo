@@ -1,6 +1,6 @@
-import React from 'react';
-import { Button, getApiUrl } from '@repo/ui';
-import { ENV_VARS, PASSTHROUGH_PREFIX } from '@repo/env-config';
+import React from "react";
+import { Button, getApiUrl } from "@repo/ui";
+import { ENV_VARS, PASSTHROUGH_PREFIX } from "@repo/env-config";
 
 // Create an interface for environment variables to make testing easier
 export interface AppEnvironment {
@@ -10,14 +10,17 @@ export interface AppEnvironment {
   apiUrl: string;
 }
 
-// Default function to get environment variables from import.meta.env
-export const getAppEnvironment = (): AppEnvironment => {
-  return {
-    apiDomain: import.meta.env.VITE_EO_CLOUD_API_DOMAIN || 'Not defined',
-    s3BucketName: import.meta.env.VITE_BIO_S3_BUCKET_NAME || 'Not defined',
-    nodeEnv: import.meta.env.MODE || 'Not defined',
-    apiUrl: getApiUrl()
-  };
+// Create a module for testing purposes
+export const AppModule = {
+  // Default function to get environment variables from import.meta.env
+  getAppEnvironment: (): AppEnvironment => {
+    return {
+      apiDomain: import.meta.env.VITE_EO_CLOUD_API_DOMAIN || "Not defined",
+      s3BucketName: import.meta.env.VITE_BIO_S3_BUCKET_NAME || "Not defined",
+      nodeEnv: import.meta.env.MODE || "Not defined",
+      apiUrl: getApiUrl(),
+    };
+  },
 };
 
 const getPassthroughEnv = (key: string): string | undefined => {
@@ -31,13 +34,13 @@ interface AppProps {
 
 function App({ environment }: AppProps) {
   // Use provided environment (for tests) or get it from import.meta.env
-  const env = environment || getAppEnvironment();
-  const passthroughExample = getPassthroughEnv('SOME_CREDENTIAL');
+  const env = environment || AppModule.getAppEnvironment();
+  const passthroughExample = getPassthroughEnv("SOME_CREDENTIAL");
 
   return (
     <div>
       <h1>Turborepo Environment Variables Example</h1>
-      
+
       <h2>Application Environment</h2>
       <p>The following variables are replaced at build time in the application:</p>
       <ul>
@@ -54,8 +57,8 @@ function App({ environment }: AppProps) {
 
       <h2>Library Environment Integration</h2>
       <p>
-        The UI library references <code>process.env.EO_CLOUD_API_DOMAIN</code> which is preserved
-        in the library build but replaced when the app is built:
+        The UI library references <code>process.env.EO_CLOUD_API_DOMAIN</code> which is preserved in the
+        library build but replaced when the app is built:
       </p>
       <ul>
         <li>
@@ -65,8 +68,8 @@ function App({ environment }: AppProps) {
 
       <h2>Passthrough Variables</h2>
       <p>
-        Variables with the <code>{PASSTHROUGH_PREFIX}</code> prefix are not replaced at build time
-        and are loaded from the runtime environment:
+        Variables with the <code>{PASSTHROUGH_PREFIX}</code> prefix are not replaced at build time and are
+        loaded from the runtime environment:
       </p>
       <ul>
         <li>

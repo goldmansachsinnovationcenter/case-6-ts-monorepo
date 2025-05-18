@@ -1,9 +1,13 @@
 /// <reference types="vitest" />
-import { defineConfig } from "vitest/config";
+import { defineConfig, mergeConfig } from "vitest/config";
+import rootConfig from "../../vitest.config";
 
-export default defineConfig({
-  test: {
-    environment: "node",
-    include: ["**/*.test.{js,ts}"],
-  },
-});
+export default mergeConfig(
+  rootConfig,
+  defineConfig({
+    test: {
+      environment: "node",
+      include: ["**/*.test.{js,ts}"],
+    },
+  })
+);

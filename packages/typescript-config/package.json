@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "lint": "echo no lint",
     "typecheck": "echo no typecheck"
   },

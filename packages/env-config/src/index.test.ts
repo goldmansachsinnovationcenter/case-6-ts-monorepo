@@ -8,6 +8,7 @@ import {
   getEnvVar,
   getPassthroughVar,
   createEnvReplacements,
+  EnvVarKey,
 } from "./index";
 
 describe("env-config", () => {
@@ -36,6 +37,8 @@ describe("env-config", () => {
   test("isPassthroughVar correctly identifies passthrough variables", () => {
     expect(isPassthroughVar(`${PASSTHROUGH_PREFIX}SECRET_KEY`)).toBe(true);
     expect(isPassthroughVar("EO_CLOUD_API_DOMAIN")).toBe(false);
+    expect(isPassthroughVar("")).toBe(false);
+    expect(isPassthroughVar(`${PASSTHROUGH_PREFIX}`)).toBe(true);
   });
 
   test("getEnvironmentMode returns correct environment mode", () => {
@@ -51,6 +54,14 @@ describe("env-config", () => {
     // Default to development if not set
     process.env.NODE_ENV = "";
     expect(getEnvironmentMode()).toBe(EnvironmentMode.Development);
+
+    // Handle undefined NODE_ENV
+    delete process.env.NODE_ENV;
+    expect(getEnvironmentMode()).toBe(EnvironmentMode.Development);
+
+    // Handle unknown values
+    process.env.NODE_ENV = "unknown";
+    expect(getEnvironmentMode()).toBe(EnvironmentMode.Development);
   });
 
   test("getEnvVar returns environment variable value", () => {
@@ -58,13 +69,38 @@ describe("env-config", () => {
     expect(getEnvVar("BIO_S3_BUCKET_NAME")).toBe("test-bucket");
     expect(getEnvVar("NODE_ENV")).toBe("test");
 
-    // Test with default value for non-existent variable
-    expect(getEnvVar("UNKNOWN_VAR" as any, "default")).toBe("default");
+    // Test with default value for existing variables in ENV_VARS
+    const nonExistentButValidKey: EnvVarKey = "NODE_ENV";
+    // First set it to undefined
+    delete process.env.NODE_ENV;
+    expect(getEnvVar(nonExistentButValidKey, "default")).toBe("default");
+
+    // Test with empty environment variable
+    process.env.EO_CLOUD_API_DOMAIN = "";
+    // In JavaScript, empty strings are falsy, so the default value will be used
+    expect(getEnvVar("EO_CLOUD_API_DOMAIN")).toBe(""); // Default is empty string when not provided
+    expect(getEnvVar("EO_CLOUD_API_DOMAIN", "default")).toBe("default"); // Empty string is considered falsy
+
+    // Test with undefined environment variable
+    delete process.env.EO_CLOUD_API_DOMAIN;
+    expect(getEnvVar("EO_CLOUD_API_DOMAIN")).toBe("");
+    expect(getEnvVar("EO_CLOUD_API_DOMAIN", "default")).toBe("default");
   });
 
   test("getPassthroughVar returns passthrough variable value", () => {
     expect(getPassthroughVar("SECRET_KEY")).toBe("test-secret-key");
     expect(getPassthroughVar("UNKNOWN_KEY", "default")).toBe("default");
+
+    // Test with empty passthrough variable
+    process.env[`${PASSTHROUGH_PREFIX}EMPTY_KEY`] = "";
+    // In JavaScript, empty strings are falsy, so the default value will be used
+    expect(getPassthroughVar("EMPTY_KEY")).toBe(""); // Default is empty string when not provided
+    expect(getPassthroughVar("EMPTY_KEY", "default")).toBe("default"); // Empty string is considered falsy
+
+    // Test with undefined passthrough variable
+    delete process.env[`${PASSTHROUGH_PREFIX}SECRET_KEY`];
+    expect(getPassthroughVar("SECRET_KEY")).toBe("");
+    expect(getPassthroughVar("SECRET_KEY", "default")).toBe("default");
   });
 
   test("createEnvReplacements creates correct environment replacements", () => {
@@ -81,5 +117,20 @@ describe("env-config", () => {
     expect(replacements["process.env.BIO_S3_BUCKET_NAME"]).toBe('"test-bucket"');
     expect(replacements["process.env.NODE_ENV"]).toBe('"test"');
     expect(replacements[`process.env.${PASSTHROUGH_PREFIX}SECRET_KEY`]).toBeUndefined();
+  });
+
+  test("createEnvReplacements handles empty environment", () => {
+    const replacements = createEnvReplacements({});
+    expect(replacements).toEqual({});
+  });
+
+  test("createEnvReplacements handles environment with only passthrough variables", () => {
+    const env = {
+      [`${PASSTHROUGH_PREFIX}SECRET_KEY`]: "test-secret-key",
+      [`${PASSTHROUGH_PREFIX}API_KEY`]: "test-api-key",
+    };
+
+    const replacements = createEnvReplacements(env);
+    expect(Object.keys(replacements).length).toBe(0);
   });
 });

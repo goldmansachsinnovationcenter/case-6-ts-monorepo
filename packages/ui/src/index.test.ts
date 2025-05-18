@@ -23,4 +23,9 @@ describe("UI utilities", () => {
     delete process.env.EO_CLOUD_API_DOMAIN;
     expect(getApiUrl()).toBe("");
   });
+
+  test("getApiUrl returns empty string when environment variable is empty", () => {
+    process.env.EO_CLOUD_API_DOMAIN = "";
+    expect(getApiUrl()).toBe("");
+  });
 });

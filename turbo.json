@@ -14,7 +14,12 @@
       "outputs": []
     },
     "test": {
-      "dependsOn": [],
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "env": ["NODE_ENV", "VITEST_LOG_LEVEL", "EO_CLOUD_API_DOMAIN", "BIO_S3_BUCKET_NAME"]
+    },
+    "test:coverage": {
+      "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
       "env": ["NODE_ENV", "VITEST_LOG_LEVEL", "EO_CLOUD_API_DOMAIN", "BIO_S3_BUCKET_NAME"]
     },

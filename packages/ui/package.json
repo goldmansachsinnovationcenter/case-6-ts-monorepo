@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "main": "./dist/ui.js",
-  "module": "./dist/ui.mjs",
+  "module": "./dist/ui.js",
   "types": "./dist/index.d.ts",
   "type": "module",
   "scripts": {
@@ -11,7 +11,8 @@
     "lint": "echo no lint",
     "dev": "vite build --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "peerDependencies": {
     "react": "^18.2.0"
@@ -35,7 +36,8 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/ui.mjs",
+      "import": "./dist/ui.js",
+      "require": "./dist/ui.js",
       "types": "./dist/index.d.ts"
     }
   }

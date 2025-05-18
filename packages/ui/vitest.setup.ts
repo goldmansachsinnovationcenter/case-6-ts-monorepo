@@ -1,5 +1,10 @@
-import { expect, vi } from "vitest";
-import * as matchers from "@testing-library/jest-dom";
+import "@testing-library/jest-dom";
+
+// Global test setup goes here
+// This file is referenced in your vitest.config.ts
+
+import { expect } from "vitest";
+import * as matchers from "@testing-library/jest-dom/matchers";
 
 // Extend Vitest's expect with testing-library matchers
 expect.extend(matchers);

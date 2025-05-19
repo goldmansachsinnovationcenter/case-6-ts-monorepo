@@ -1,6 +1,7 @@
 import React from "react";
 import { describe, test, expect, vi, beforeEach, afterAll } from "vitest";
 import { render, screen } from "@testing-library/react";
+import "@testing-library/jest-dom";
 import App, { AppEnvironment, AppModule } from "./App";
 
 // Only mock the getApiUrl function, not any UI components

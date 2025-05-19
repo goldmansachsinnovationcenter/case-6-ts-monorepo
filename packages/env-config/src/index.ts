@@ -1,14 +1,16 @@
 /**
  * Environment variable configuration for the monorepo
+ * Uses Vite's built-in environment variable handling
  */
 
 /**
- * Prefix for environment variables that should not be replaced at build time
+ * The prefix used for passthrough environment variables
  */
 export const PASSTHROUGH_PREFIX = "PASSTHROUGH_";
 
 /**
  * Standard environment variables used across the monorepo
+ * These maintain the original variable names for compatibility with tests
  */
 export const ENV_VARS = {
   EO_CLOUD_API_DOMAIN: "EO_CLOUD_API_DOMAIN",
@@ -16,19 +18,17 @@ export const ENV_VARS = {
   NODE_ENV: "NODE_ENV",
 } as const;
 
+// Internal mapping to Vite prefixed variables for runtime use
+const VITE_ENV_VARS: Record<string, string> = {
+  EO_CLOUD_API_DOMAIN: "VITE_EO_CLOUD_API_DOMAIN",
+  BIO_S3_BUCKET_NAME: "VITE_BIO_S3_BUCKET_NAME",
+  NODE_ENV: "NODE_ENV", // NODE_ENV doesn't need a VITE_ prefix
+};
+
 /**
  * Type for environment variable keys
  */
 export type EnvVarKey = keyof typeof ENV_VARS;
-
-/**
- * Check if an environment variable should be passed through (not replaced at build time)
- * @param key Environment variable key
- * @returns Whether the variable should be passed through
- */
-export const isPassthroughVar = (key: string): boolean => {
-  return key.startsWith(PASSTHROUGH_PREFIX);
-};
 
 /**
  * Environment modes
@@ -39,25 +39,169 @@ export enum EnvironmentMode {
   Test = "test",
 }
 
+// Helper functions for accessing different environment sources
+// These are exposed for testing purposes
+export const envHelpers = {
+  getProcessEnv(): Record<string, string | undefined> | undefined {
+    if (typeof process !== "undefined" && process.env) {
+      return process.env;
+    }
+    return undefined;
+  },
+
+  getImportMetaEnv(): Record<string, any> | undefined {
+    try {
+      // Check if import.meta.env exists (only in Vite environments)
+      if (
+        typeof globalThis !== "undefined" &&
+        "import" in globalThis &&
+        "meta" in (globalThis as any).import &&
+        "env" in (globalThis as any).import.meta
+      ) {
+        return (globalThis as any).import.meta.env;
+      }
+    } catch (e) {
+      // Ignore any errors when trying to access import.meta
+    }
+    return undefined;
+  },
+
+  getMode(): string | undefined {
+    const processEnv = this.getProcessEnv();
+    if (processEnv && processEnv.NODE_ENV) {
+      return processEnv.NODE_ENV;
+    }
+
+    const importMetaEnv = this.getImportMetaEnv();
+    if (importMetaEnv && importMetaEnv.MODE) {
+      return importMetaEnv.MODE;
+    }
+
+    return undefined;
+  },
+};
+
+/**
+ * Check if an environment variable is a passthrough variable
+ * @param name The name of the environment variable
+ * @returns True if the environment variable is a passthrough variable
+ */
+export const isPassthroughVar = (name: string): boolean => {
+  return name.startsWith(PASSTHROUGH_PREFIX);
+};
+
 /**
  * Get the current environment mode
  * @returns The current environment mode
  */
 export const getEnvironmentMode = (): EnvironmentMode => {
-  const nodeEnv = process.env.NODE_ENV;
-  if (nodeEnv === "production") return EnvironmentMode.Production;
-  if (nodeEnv === "test") return EnvironmentMode.Test;
+  const mode = envHelpers.getMode()?.toLowerCase();
+
+  if (mode === EnvironmentMode.Production) return EnvironmentMode.Production;
+  if (mode === EnvironmentMode.Test) return EnvironmentMode.Test;
+
+  // Always default to development
   return EnvironmentMode.Development;
 };
 
 /**
- * Get an environment variable value
+ * Type-safe accessor for environment variables
+ * Uses Vite's import.meta.env for runtime access and process.env for test context
+ *
  * @param key Environment variable key
  * @param defaultValue Default value if the environment variable is not set
  * @returns The environment variable value or the default value
  */
 export const getEnvVar = (key: EnvVarKey, defaultValue: string = ""): string => {
-  return process.env[key] || defaultValue;
+  const envKey = ENV_VARS[key];
+  const viteEnvKey = VITE_ENV_VARS[key];
+
+  // Special case for NODE_ENV
+  if (envKey === "NODE_ENV") {
+    const mode = envHelpers.getMode();
+    return mode || defaultValue;
+  }
+
+  // First try process.env (Node.js environment)
+  const processEnv = envHelpers.getProcessEnv();
+  if (processEnv && processEnv[envKey] !== undefined && processEnv[envKey] !== "") {
+    return processEnv[envKey] || "";
+  }
+
+  // Then try import.meta.env (browser environment)
+  const importMetaEnv = envHelpers.getImportMetaEnv();
+  if (importMetaEnv && importMetaEnv[viteEnvKey] !== undefined) {
+    return importMetaEnv[viteEnvKey] || defaultValue;
+  }
+
+  return defaultValue;
+};
+
+/**
+ * Get a passthrough environment variable value
+ * @param key The key of the passthrough variable (without prefix)
+ * @param defaultValue Default value if the variable is not set
+ * @returns The passthrough variable value or the default value
+ */
+export const getPassthroughVar = (key: string, defaultValue: string = ""): string => {
+  const prefixedKey = `${PASSTHROUGH_PREFIX}${key}`;
+
+  // First try process.env (Node.js environment)
+  const processEnv = envHelpers.getProcessEnv();
+  if (processEnv && processEnv[prefixedKey] !== undefined) {
+    return processEnv[prefixedKey] || defaultValue;
+  }
+
+  // Then try import.meta.env (browser environment)
+  const importMetaEnv = envHelpers.getImportMetaEnv();
+  if (importMetaEnv && importMetaEnv[prefixedKey] !== undefined) {
+    return importMetaEnv[prefixedKey] || defaultValue;
+  }
+
+  return defaultValue;
+};
+
+/**
+ * Create environment variable replacements for build time
+ * @param env Environment variables
+ * @param strictCheck Whether to check for required environment variables
+ * @param mode The current environment mode
+ * @returns Environment variable replacements
+ */
+export const createEnvReplacements = (
+  env: Record<string, string | undefined>,
+  strictCheck: boolean = false,
+  mode: string = envHelpers.getMode() || "development"
+): Record<string, string> => {
+  const replacements: Record<string, string> = {};
+
+  // Check if we should enforce environment variable presence
+  const enforceCheck =
+    strictCheck &&
+    (mode === EnvironmentMode.Production ||
+      (envHelpers.getProcessEnv() && envHelpers.getProcessEnv()?.FORCE_ENV_CHECK === "true"));
+
+  // Check for missing required environment variables
+  if (enforceCheck) {
+    for (const key of Object.keys(ENV_VARS)) {
+      if (key === "NODE_ENV") continue; // NODE_ENV is not strictly required
+      const value = env[key];
+      if (value === undefined || value === "") {
+        throw new Error(`Required environment variable ${key} is missing or empty`);
+      }
+    }
+  }
+
+  // Create replacements for all non-passthrough variables
+  for (const [key, value] of Object.entries(env)) {
+    // Skip passthrough variables
+    if (isPassthroughVar(key)) continue;
+
+    // Add the replacement for process.env.KEY
+    replacements[`process.env.${key}`] = JSON.stringify(value);
+  }
+
+  return replacements;
 };
 
 /**
@@ -67,67 +211,9 @@ export const getEnvVar = (key: EnvVarKey, defaultValue: string = ""): string => 
  * @throws Error if the environment variable is not defined
  */
 export const requireEnvVar = (key: EnvVarKey): string => {
-  const value = process.env[key];
+  const value = getEnvVar(key);
   if (value === undefined || value === "") {
     throw new Error(`Required environment variable ${key} is missing or empty`);
   }
   return value;
-};
-
-/**
- * Get a passthrough environment variable at runtime
- * @param key Environment variable key without the PASSTHROUGH_ prefix
- * @param defaultValue Default value if the environment variable is not set
- * @returns The environment variable value or the default value
- */
-export const getPassthroughVar = (key: string, defaultValue: string = ""): string => {
-  return process.env[`${PASSTHROUGH_PREFIX}${key}`] || defaultValue;
-};
-
-/**
- * Create a map of environment variables for Vite's define option
- * @param env Environment variables object from Vite's loadEnv
- * @param strictCheck Set to true to make the build fail if any non-passthrough env var is missing
- * @param mode The current environment mode (development, production, test)
- * @returns Object with process.env.* keys mapped to JSON stringified values
- * @throws Error if strictCheck is true and any non-passthrough env var is missing in production mode
- */
-export const createEnvReplacements = (
-  envFromViteLoadEnv: Record<string, string>,
-  strictCheck: boolean = false,
-  mode: string = process.env.NODE_ENV || "development"
-): Record<string, string> => {
-  // Only apply strict checking in production mode or if explicitly requested
-  const shouldStrictCheck = strictCheck && (mode === "production" || process.env.FORCE_ENV_CHECK === "true");
-
-  if (shouldStrictCheck) {
-    // Check all ENV_VARS except NODE_ENV which has defaults
-    Object.values(ENV_VARS).forEach((key) => {
-      // Skip NODE_ENV which has defaults
-      if (key !== "NODE_ENV" && !isPassthroughVar(key)) {
-        const value = envFromViteLoadEnv[key];
-
-        // Throw error if the variable is missing or empty
-        if (!value) {
-          throw new Error(`Required environment variable ${key} is missing or empty`);
-        }
-      }
-    });
-  } else if (strictCheck && mode !== "production") {
-    // In non-production environments with strictCheck, warn but don't fail
-    Object.values(ENV_VARS).forEach((key) => {
-      if (key !== "NODE_ENV" && !isPassthroughVar(key)) {
-        const value = envFromViteLoadEnv[key];
-        if (!value) {
-          console.warn(`Warning: Environment variable ${key} is missing or empty (ignored in ${mode} mode)`);
-        }
-      }
-    });
-  }
-
-  return Object.fromEntries(
-    Object.entries(envFromViteLoadEnv)
-      .filter(([key]) => !isPassthroughVar(key))
-      .map(([key, value]) => [`process.env.${key}`, JSON.stringify(value)])
-  );
 };

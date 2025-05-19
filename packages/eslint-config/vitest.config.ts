@@ -9,6 +9,8 @@ export default mergeConfig(
       environment: "node",
       include: ["**/*.test.{js,ts}", "**/*.config.test.{js,ts}"],
       exclude: [
+        "library.js",
+        "react.js",
         "**/node_modules/**",
         "**/dist/**",
         "**/cypress/**",

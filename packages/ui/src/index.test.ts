@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { getApiUrl } from "./index";
 
-describe("UI utilities", () => {
+describe("UI utility functions", () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
@@ -14,18 +14,20 @@ describe("UI utilities", () => {
     process.env = { ...originalEnv };
   });
 
-  test("getApiUrl returns the cloud API domain from environment variable", () => {
-    process.env.EO_CLOUD_API_DOMAIN = "api.example.com";
-    expect(getApiUrl()).toBe("api.example.com");
-  });
+  describe("getApiUrl", () => {
+    test("returns the VITE_APP_CLOUD_API_DOMAIN environment variable", () => {
+      process.env.VITE_APP_CLOUD_API_DOMAIN = "api.example.com";
+      expect(getApiUrl()).toBe("api.example.com");
+    });
 
-  test("getApiUrl returns empty string when environment variable is not set", () => {
-    delete process.env.EO_CLOUD_API_DOMAIN;
-    expect(getApiUrl()).toBe("");
-  });
+    test("returns empty string when VITE_APP_CLOUD_API_DOMAIN is not set", () => {
+      delete process.env.VITE_APP_CLOUD_API_DOMAIN;
+      expect(getApiUrl()).toBe("");
+    });
 
-  test("getApiUrl returns empty string when environment variable is empty", () => {
-    process.env.EO_CLOUD_API_DOMAIN = "";
-    expect(getApiUrl()).toBe("");
+    test("returns empty string when VITE_APP_CLOUD_API_DOMAIN is empty", () => {
+      process.env.VITE_APP_CLOUD_API_DOMAIN = "";
+      expect(getApiUrl()).toBe("");
+    });
   });
 });

@@ -9,16 +9,16 @@
 export const PASSTHROUGH_PREFIX = "PASSTHROUGH_";
 
 /**
- * Vite environment variables used in the application
- * These are prefixed with VITE_ for Vite compatibility
+ * Environment variables used in the application
+ * These are the exact variable names as they appear in the environment
  */
-const ENV_VARS: Record<string, string> = {
+export const ENV_VARS = {
   NODE_ENV: "NODE_ENV", // NODE_ENV doesn't need a VITE_ prefix
   PASSTHROUGH_LAMBDA_CREDENTIAL: "PASSTHROUGH_LAMBDA_CREDENTIAL",
   VITE_APP_CLOUD_API_DOMAIN: "VITE_APP_CLOUD_API_DOMAIN",
   VITE_LAMBDA_S3_BUCKET_NAME: "VITE_LAMBDA_S3_BUCKET_NAME",
   VITE_LIB_ENV_NAME: "VITE_LIB_ENV_NAME",
-};
+} as const;
 
 /**
  * Type for environment variable keys
@@ -108,11 +108,10 @@ export const getEnvironmentMode = (): EnvironmentMode => {
  * @returns The environment variable value or the default value
  */
 export const getEnvVar = (key: EnvVarKey, defaultValue: string = ""): string => {
-  const envKey = VITE_ENV_VARS[key];
-  const viteEnvKey = VITE_ENV_VARS[key];
+  const envKey = ENV_VARS[key];
 
   // Special case for NODE_ENV
-  if (envKey === "NODE_ENV") {
+  if (key === "NODE_ENV") {
     const mode = envHelpers.getMode();
     return mode || defaultValue;
   }
@@ -125,8 +124,8 @@ export const getEnvVar = (key: EnvVarKey, defaultValue: string = ""): string => 
 
   // Then try import.meta.env (browser environment)
   const importMetaEnv = envHelpers.getImportMetaEnv();
-  if (importMetaEnv && importMetaEnv[viteEnvKey] !== undefined) {
-    return importMetaEnv[viteEnvKey] || defaultValue;
+  if (importMetaEnv && importMetaEnv[envKey] !== undefined) {
+    return importMetaEnv[envKey] || defaultValue;
   }
 
   return defaultValue;
@@ -178,8 +177,10 @@ export const createEnvReplacements = (
 
   // Check for missing required environment variables
   if (enforceCheck) {
-    for (const key of Object.keys(VITE_ENV_VARS)) {
+    for (const key of Object.keys(ENV_VARS)) {
       if (key === "NODE_ENV") continue; // NODE_ENV is not strictly required
+      if (isPassthroughVar(key)) continue; // Skip passthrough variables in strict checking
+
       const value = env[key];
       if (value === undefined || value === "") {
         throw new Error(`Required environment variable ${key} is missing or empty`);

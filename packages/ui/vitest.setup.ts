@@ -9,8 +9,12 @@ import * as matchers from "@testing-library/jest-dom/matchers";
 // Extend Vitest's expect with testing-library matchers
 expect.extend(matchers);
 
-// Mock environment variables for UI package tests
+// Mock environment variables for tests
 process.env = {
   ...process.env,
-  EO_CLOUD_API_DOMAIN: "test-api.example.com",
+  NODE_ENV: "test",
+  VITE_APP_CLOUD_API_DOMAIN: "test-api.example.com",
+  VITE_LAMBDA_S3_BUCKET_NAME: "test-bucket",
+  VITE_LIB_ENV_NAME: "test-env",
+  PASSTHROUGH_LAMBDA_CREDENTIAL: "test-secret-key",
 };

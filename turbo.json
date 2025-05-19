@@ -10,8 +10,8 @@
         "EO_CLOUD_API_DOMAIN",
         "NODE_ENV",
         "PASSTHROUGH_\\*",
-        "VITE_BIO_S3_BUCKET_NAME",
-        "VITE_EO_CLOUD_API_DOMAIN"
+        "VITE_LAMBDA_S3_BUCKET_NAME",
+        "VITE_CLOUD_API_DOMAIN"
       ]
     },
     "lint": {

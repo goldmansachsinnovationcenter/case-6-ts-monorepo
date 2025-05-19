@@ -6,6 +6,7 @@ import { ENV_VARS, PASSTHROUGH_PREFIX } from "@repo/env-config";
 export interface AppEnvironment {
   apiDomain: string;
   s3BucketName: string;
+  libEnvName: string;
   nodeEnv: string;
   apiUrl: string;
 }
@@ -15,8 +16,9 @@ export const AppModule = {
   // Default function to get environment variables from import.meta.env
   getAppEnvironment: (): AppEnvironment => {
     return {
-      apiDomain: import.meta.env.VITE_EO_CLOUD_API_DOMAIN || "Not defined",
-      s3BucketName: import.meta.env.VITE_BIO_S3_BUCKET_NAME || "Not defined",
+      apiDomain: import.meta.env.VITE_APP_CLOUD_API_DOMAIN || "Not defined",
+      s3BucketName: import.meta.env.VITE_LAMBDA_S3_BUCKET_NAME || "Not defined",
+      libEnvName: import.meta.env.VITE_LIB_ENV_NAME || "Not defined",
       nodeEnv: import.meta.env.MODE || "Not defined",
       apiUrl: getApiUrl(),
     };
@@ -35,7 +37,7 @@ interface AppProps {
 function App({ environment }: AppProps) {
   // Use provided environment (for tests) or get it from import.meta.env
   const env = environment || AppModule.getAppEnvironment();
-  const passthroughExample = getPassthroughEnv("SOME_CREDENTIAL");
+  const passthroughExample = getPassthroughEnv("LAMBDA_CREDENTIAL");
 
   return (
     <div>
@@ -51,14 +53,17 @@ function App({ environment }: AppProps) {
           <strong>S3 Bucket:</strong> {env.s3BucketName}
         </li>
         <li>
+          <strong>Library Environment Name:</strong> {env.libEnvName}
+        </li>
+        <li>
           <strong>Node Environment:</strong> {env.nodeEnv}
         </li>
       </ul>
 
       <h2>Library Environment Integration</h2>
       <p>
-        The UI library references <code>process.env.EO_CLOUD_API_DOMAIN</code> which is preserved in the
-        library build but replaced when the app is built:
+        The UI library references environment variables which are preserved in the library build but replaced
+        when the app is built:
       </p>
       <ul>
         <li>

@@ -19,6 +19,7 @@ AppModule.getAppEnvironment = vi.fn().mockImplementation(
   (): AppEnvironment => ({
     apiDomain: "default-api.example.com",
     s3BucketName: "default-bucket",
+    libEnvName: "default-env-name",
     nodeEnv: "development",
     apiUrl: "mocked-api-url",
   })
@@ -33,6 +34,7 @@ describe("App", () => {
       (): AppEnvironment => ({
         apiDomain: "default-api.example.com",
         s3BucketName: "default-bucket",
+        libEnvName: "default-env-name",
         nodeEnv: "development",
         apiUrl: "mocked-api-url",
       })
@@ -56,6 +58,7 @@ describe("App", () => {
     // Create mock environment for testing
     const mockEnvironment: AppEnvironment = {
       apiDomain: "test-api.example.com",
+      libEnvName: "test-env-name",
       s3BucketName: "test-bucket-name",
       nodeEnv: "test",
       apiUrl: "mocked-api-url",
@@ -79,7 +82,7 @@ describe("App", () => {
     expect(s3BucketItem).toHaveTextContent("test-bucket-name");
     expect(nodeEnvItem).toHaveTextContent("test");
     expect(apiUrlItem).toHaveTextContent("mocked-api-url");
-    expect(runtimeCredItem).toHaveTextContent("[RUNTIME VALUE FOR SOME_CREDENTIAL]");
+    expect(runtimeCredItem).toHaveTextContent("[RUNTIME VALUE FOR LAMBDA_CREDENTIAL]");
 
     // Check if the Button component is rendered (without mocking it)
     expect(screen.getByRole("button")).toBeInTheDocument();
@@ -106,6 +109,7 @@ describe("App", () => {
     (AppModule.getAppEnvironment as ReturnType<typeof vi.fn>).mockImplementationOnce(
       (): AppEnvironment => ({
         apiDomain: "Not defined",
+        libEnvName: "Not defined",
         s3BucketName: "Not defined",
         nodeEnv: "Not defined",
         apiUrl: "mocked-api-url",
@@ -129,6 +133,7 @@ describe("App", () => {
     (AppModule.getAppEnvironment as ReturnType<typeof vi.fn>).mockImplementationOnce(
       (): AppEnvironment => ({
         apiDomain: "api.test.com",
+        libEnvName: "test-lib-env",
         s3BucketName: "test-s3-bucket",
         nodeEnv: "production",
         apiUrl: "mocked-api-url",
@@ -158,8 +163,9 @@ describe("App", () => {
     // Note: The afterEach from the parent describe block will call vi.unstubAllEnvs()
 
     test("with environment variables", async () => {
-      vi.stubEnv("VITE_EO_CLOUD_API_DOMAIN", "real-domain-from-test");
-      vi.stubEnv("VITE_BIO_S3_BUCKET_NAME", "real-bucket-from-test");
+      vi.stubEnv("VITE_APP_CLOUD_API_DOMAIN", "real-domain-from-test");
+      vi.stubEnv("VITE_LAMBDA_S3_BUCKET_NAME", "real-bucket-from-test");
+      vi.stubEnv("VITE_LIB_ENV_NAME", "real-lib-env-from-test");
       vi.stubEnv("MODE", "test-mode-from-test");
 
       // Dynamically import the module - it will use the stubbed import.meta.env
@@ -168,14 +174,16 @@ describe("App", () => {
 
       expect(result.apiDomain).toBe("real-domain-from-test");
       expect(result.s3BucketName).toBe("real-bucket-from-test");
+      expect(result.libEnvName).toBe("real-lib-env-from-test");
       expect(result.nodeEnv).toBe("test-mode-from-test");
     });
 
     test("without environment variables (defaults)", async () => {
       // Stubbing with empty strings will make them falsy,
       // so the '|| "Not defined"' logic in App.tsx will apply.
-      vi.stubEnv("VITE_EO_CLOUD_API_DOMAIN", "");
-      vi.stubEnv("VITE_BIO_S3_BUCKET_NAME", "");
+      vi.stubEnv("VITE_APP_CLOUD_API_DOMAIN", "");
+      vi.stubEnv("VITE_LAMBDA_S3_BUCKET_NAME", "");
+      vi.stubEnv("VITE_LIB_ENV_NAME", "");
       vi.stubEnv("MODE", ""); // For env.MODE || "Not defined"
 
       // Dynamically import the module
@@ -184,6 +192,7 @@ describe("App", () => {
 
       expect(result.apiDomain).toBe("Not defined");
       expect(result.s3BucketName).toBe("Not defined");
+      expect(result.libEnvName).toBe("Not defined");
       expect(result.nodeEnv).toBe("Not defined");
     });
   });

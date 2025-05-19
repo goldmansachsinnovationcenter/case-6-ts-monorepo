@@ -11,6 +11,7 @@ describe("Button", () => {
     // Reset environment variables before each test
     process.env = { ...originalEnv };
     process.env.NODE_ENV = "test";
+    process.env.VITE_LIB_ENV_NAME = "test-env";
   });
 
   afterEach(() => {
@@ -23,7 +24,8 @@ describe("Button", () => {
 
     const buttonElement = screen.getByRole("button");
     expect(buttonElement).toBeInTheDocument();
-    expect(buttonElement).toHaveTextContent("Click me (test)");
+    expect(buttonElement).toHaveTextContent("NODE_ENV: (test)");
+    expect(buttonElement).toHaveTextContent("VITE_LIB_ENV_NAME: (test-env)");
   });
 
   test("applies custom className", () => {
@@ -38,16 +40,19 @@ describe("Button", () => {
 
   test("handles different environment values", () => {
     process.env.NODE_ENV = "production";
+    process.env.VITE_LIB_ENV_NAME = "production-env";
     render(<Button>Click me</Button>);
     const buttonElement = screen.getByRole("button");
-    expect(buttonElement).toHaveTextContent("Click me (production)");
+    expect(buttonElement).toHaveTextContent("NODE_ENV: (production)");
+    expect(buttonElement).toHaveTextContent("VITE_LIB_ENV_NAME: (production-env)");
   });
 
   test("handles empty NODE_ENV by defaulting to development", () => {
     delete process.env.NODE_ENV;
     render(<Button>Click me</Button>);
     const buttonElement = screen.getByRole("button");
-    expect(buttonElement).toHaveTextContent("Click me (development)");
+    expect(buttonElement).toHaveTextContent("NODE_ENV: ()");
+    expect(buttonElement).toHaveTextContent("VITE_LIB_ENV_NAME: (test-env)");
   });
 
   test("executes onClick handler when clicked", () => {

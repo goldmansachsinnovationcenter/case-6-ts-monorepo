@@ -5,7 +5,14 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"],
-      "env": ["NODE_ENV", "EO_CLOUD_API_DOMAIN", "BIO_S3_BUCKET_NAME", "PASSTHROUGH_\\*"]
+      "env": [
+        "BIO_S3_BUCKET_NAME",
+        "EO_CLOUD_API_DOMAIN",
+        "NODE_ENV",
+        "PASSTHROUGH_\\*",
+        "VITE_BIO_S3_BUCKET_NAME",
+        "VITE_EO_CLOUD_API_DOMAIN"
+      ]
     },
     "lint": {
       "outputs": []

@@ -92,7 +92,7 @@ export const getPassthroughVar = (key: string, defaultValue: string = ""): strin
  * @throws Error if strictCheck is true and any non-passthrough env var is missing
  */
 export const createEnvReplacements = (
-  env: Record<string, string>,
+  envFromViteLoadEnv: Record<string, string>,
   strictCheck: boolean = false
 ): Record<string, string> => {
   // Check for missing required env vars if strictCheck is enabled
@@ -100,14 +100,29 @@ export const createEnvReplacements = (
     // Check all ENV_VARS except NODE_ENV which has defaults
     Object.values(ENV_VARS).forEach((key) => {
       // Skip passthrough vars and NODE_ENV which has defaults
-      if (key !== "NODE_ENV" && !isPassthroughVar(key) && (env[key] === undefined || env[key] === "")) {
-        throw new Error(`Required environment variable ${key} is missing or empty`);
+      if (key !== "NODE_ENV" && !isPassthroughVar(key)) {
+        let value = envFromViteLoadEnv[key]; // Value from Vite's loadEnv (should have prefix stripped)
+
+        // If Vite's loadEnv didn't provide it (e.g., VITE_ prefix issue or propagation problem)
+        // let's try to get it from process.env directly, checking common patterns.
+        if (value === undefined || value === "") {
+          value = process.env[`VITE_${key}`] ?? ""; // Check for VITE_PREFIXED_VERSION
+        }
+        if (value === undefined || value === "") {
+          value = process.env[key] ?? ""; // Check for NON_PREFIXED_VERSION
+        }
+
+        if (value === undefined || value === "") {
+          throw new Error(
+            `Required environment variable ${key} (checked as ${key} from Vite's loadEnv, VITE_${key} from process.env, and ${key} from process.env) is missing or empty`
+          );
+        }
       }
     });
   }
 
   return Object.fromEntries(
-    Object.entries(env)
+    Object.entries(envFromViteLoadEnv)
       .filter(([key]) => !isPassthroughVar(key))
       .map(([key, value]) => [`process.env.${key}`, JSON.stringify(value)])
   );

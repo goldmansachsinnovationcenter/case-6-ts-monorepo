@@ -1,5 +1,5 @@
 import React from "react";
-import { describe, test, expect, vi, beforeEach, afterAll } from "vitest";
+import { describe, test, expect, vi, beforeEach, afterEach, afterAll } from "vitest"; // Added afterEach
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import App, { AppEnvironment, AppModule } from "./App";
@@ -13,8 +13,8 @@ vi.mock("@repo/ui", async () => {
   };
 });
 
-// Setup the default mock for AppModule
-const originalGetAppEnvironment = AppModule.getAppEnvironment;
+// Setup the default mock for AppModule for most tests
+const originalGetAppEnvironment = AppModule.getAppEnvironment; // Actual function from initial import
 AppModule.getAppEnvironment = vi.fn().mockImplementation(
   (): AppEnvironment => ({
     apiDomain: "default-api.example.com",
@@ -28,11 +28,28 @@ describe("App", () => {
   beforeEach(() => {
     // Reset mocks between tests
     vi.clearAllMocks();
+    // Ensure the global AppModule mock is reset to the default vi.fn() for tests that rely on it
+    AppModule.getAppEnvironment = vi.fn().mockImplementation(
+      (): AppEnvironment => ({
+        apiDomain: "default-api.example.com",
+        s3BucketName: "default-bucket",
+        nodeEnv: "development",
+        apiUrl: "mocked-api-url",
+      })
+    );
+  });
+
+  afterEach(() => {
+    // Clean up any stubs on `import` global
+    vi.unstubAllGlobals();
+    // Clean up any environment stubs as a good measure, though stubGlobal was used here.
+    vi.unstubAllEnvs();
   });
 
   afterAll(() => {
     // Restore original function after all tests
     AppModule.getAppEnvironment = originalGetAppEnvironment;
+    vi.resetModules(); // Clean up module cache alterations
   });
 
   test("renders environment variables correctly with passed environment prop", () => {
@@ -84,9 +101,9 @@ describe("App", () => {
     expect(nodeEnvItem).toHaveTextContent("development");
   });
 
-  test("getAppEnvironment handles missing environment variables", () => {
-    // Set specific values for this test only
-    (AppModule.getAppEnvironment as any).mockImplementationOnce(
+  test("getAppEnvironment handles missing environment variables (using mock)", () => {
+    // This test uses the globally mocked AppModule.getAppEnvironment
+    (AppModule.getAppEnvironment as ReturnType<typeof vi.fn>).mockImplementationOnce(
       (): AppEnvironment => ({
         apiDomain: "Not defined",
         s3BucketName: "Not defined",
@@ -107,9 +124,9 @@ describe("App", () => {
     expect(nodeEnvItem).toHaveTextContent("Not defined");
   });
 
-  test("getAppEnvironment uses provided environment values", () => {
-    // Set specific values for this test only
-    (AppModule.getAppEnvironment as any).mockImplementationOnce(
+  test("getAppEnvironment uses provided environment values (using mock)", () => {
+    // This test uses the globally mocked AppModule.getAppEnvironment
+    (AppModule.getAppEnvironment as ReturnType<typeof vi.fn>).mockImplementationOnce(
       (): AppEnvironment => ({
         apiDomain: "api.test.com",
         s3BucketName: "test-s3-bucket",
@@ -128,5 +145,46 @@ describe("App", () => {
     expect(apiDomainItem).toHaveTextContent("api.test.com");
     expect(s3BucketItem).toHaveTextContent("test-s3-bucket");
     expect(nodeEnvItem).toHaveTextContent("production");
+  });
+
+  // Tests for the actual AppModule.getAppEnvironment implementation from App.tsx
+  describe("actual AppModule.getAppEnvironment implementation", () => {
+    beforeEach(() => {
+      // Reset modules before each test to ensure ./App is re-evaluated
+      // with the (newly stubbed) import.meta.env for that specific test.
+      vi.resetModules();
+    });
+
+    // Note: The afterEach from the parent describe block will call vi.unstubAllEnvs()
+
+    test("with environment variables", async () => {
+      vi.stubEnv("VITE_EO_CLOUD_API_DOMAIN", "real-domain-from-test");
+      vi.stubEnv("VITE_BIO_S3_BUCKET_NAME", "real-bucket-from-test");
+      vi.stubEnv("MODE", "test-mode-from-test");
+
+      // Dynamically import the module - it will use the stubbed import.meta.env
+      const { AppModule: FreshAppModule } = await import("./App");
+      const result = FreshAppModule.getAppEnvironment();
+
+      expect(result.apiDomain).toBe("real-domain-from-test");
+      expect(result.s3BucketName).toBe("real-bucket-from-test");
+      expect(result.nodeEnv).toBe("test-mode-from-test");
+    });
+
+    test("without environment variables (defaults)", async () => {
+      // Stubbing with empty strings will make them falsy,
+      // so the '|| "Not defined"' logic in App.tsx will apply.
+      vi.stubEnv("VITE_EO_CLOUD_API_DOMAIN", "");
+      vi.stubEnv("VITE_BIO_S3_BUCKET_NAME", "");
+      vi.stubEnv("MODE", ""); // For env.MODE || "Not defined"
+
+      // Dynamically import the module
+      const { AppModule: FreshAppModule } = await import("./App");
+      const result = FreshAppModule.getAppEnvironment();
+
+      expect(result.apiDomain).toBe("Not defined");
+      expect(result.s3BucketName).toBe("Not defined");
+      expect(result.nodeEnv).toBe("Not defined");
+    });
   });
 });

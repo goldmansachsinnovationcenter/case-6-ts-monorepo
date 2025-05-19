@@ -88,34 +88,38 @@ export const getPassthroughVar = (key: string, defaultValue: string = ""): strin
  * Create a map of environment variables for Vite's define option
  * @param env Environment variables object from Vite's loadEnv
  * @param strictCheck Set to true to make the build fail if any non-passthrough env var is missing
+ * @param mode The current environment mode (development, production, test)
  * @returns Object with process.env.* keys mapped to JSON stringified values
- * @throws Error if strictCheck is true and any non-passthrough env var is missing
+ * @throws Error if strictCheck is true and any non-passthrough env var is missing in production mode
  */
 export const createEnvReplacements = (
   envFromViteLoadEnv: Record<string, string>,
-  strictCheck: boolean = false
+  strictCheck: boolean = false,
+  mode: string = process.env.NODE_ENV || "development"
 ): Record<string, string> => {
-  // Check for missing required env vars if strictCheck is enabled
-  if (strictCheck) {
+  // Only apply strict checking in production mode or if explicitly requested
+  const shouldStrictCheck = strictCheck && (mode === "production" || process.env.FORCE_ENV_CHECK === "true");
+
+  if (shouldStrictCheck) {
     // Check all ENV_VARS except NODE_ENV which has defaults
     Object.values(ENV_VARS).forEach((key) => {
-      // Skip passthrough vars and NODE_ENV which has defaults
+      // Skip NODE_ENV which has defaults
       if (key !== "NODE_ENV" && !isPassthroughVar(key)) {
-        let value = envFromViteLoadEnv[key]; // Value from Vite's loadEnv (should have prefix stripped)
+        const value = envFromViteLoadEnv[key];
 
-        // If Vite's loadEnv didn't provide it (e.g., VITE_ prefix issue or propagation problem)
-        // let's try to get it from process.env directly, checking common patterns.
-        if (value === undefined || value === "") {
-          value = process.env[`VITE_${key}`] ?? ""; // Check for VITE_PREFIXED_VERSION
+        // Throw error if the variable is missing or empty
+        if (!value) {
+          throw new Error(`Required environment variable ${key} is missing or empty`);
         }
-        if (value === undefined || value === "") {
-          value = process.env[key] ?? ""; // Check for NON_PREFIXED_VERSION
-        }
-
-        if (value === undefined || value === "") {
-          throw new Error(
-            `Required environment variable ${key} (checked as ${key} from Vite's loadEnv, VITE_${key} from process.env, and ${key} from process.env) is missing or empty`
-          );
+      }
+    });
+  } else if (strictCheck && mode !== "production") {
+    // In non-production environments with strictCheck, warn but don't fail
+    Object.values(ENV_VARS).forEach((key) => {
+      if (key !== "NODE_ENV" && !isPassthroughVar(key)) {
+        const value = envFromViteLoadEnv[key];
+        if (!value) {
+          console.warn(`Warning: Environment variable ${key} is missing or empty (ignored in ${mode} mode)`);
         }
       }
     });

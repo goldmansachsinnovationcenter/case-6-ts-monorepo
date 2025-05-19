@@ -146,19 +146,19 @@ describe("env-config", () => {
       expect(() => createEnvReplacements(env, false)).not.toThrow();
     });
 
-    test("createEnvReplacements throws when strictCheck is true and non-passthrough env vars are missing", () => {
+    test("createEnvReplacements throws when strictCheck is true and non-passthrough env vars are missing in production mode", () => {
       // Missing EO_CLOUD_API_DOMAIN and BIO_S3_BUCKET_NAME
       const env = {
         NODE_ENV: "production", // NODE_ENV is allowed to be missing
         [`${PASSTHROUGH_PREFIX}SECRET_KEY`]: "test-secret-key", // Passthrough vars are allowed to be missing
       };
 
-      expect(() => createEnvReplacements(env, true)).toThrowError(
+      expect(() => createEnvReplacements(env, true, "production")).toThrowError(
         /Required environment variable (EO_CLOUD_API_DOMAIN|BIO_S3_BUCKET_NAME) is missing or empty/
       );
     });
 
-    test("createEnvReplacements throws when strictCheck is true and non-passthrough env vars are empty", () => {
+    test("createEnvReplacements throws when strictCheck is true and non-passthrough env vars are empty in production mode", () => {
       // Empty EO_CLOUD_API_DOMAIN
       const env = {
         EO_CLOUD_API_DOMAIN: "", // Empty value should cause an error
@@ -167,9 +167,43 @@ describe("env-config", () => {
         [`${PASSTHROUGH_PREFIX}SECRET_KEY`]: "test-secret-key",
       };
 
-      expect(() => createEnvReplacements(env, true)).toThrowError(
+      expect(() => createEnvReplacements(env, true, "production")).toThrowError(
         "Required environment variable EO_CLOUD_API_DOMAIN is missing or empty"
       );
+    });
+
+    test("createEnvReplacements does not throw when strictCheck is true and required env vars are missing in development mode", () => {
+      // Missing EO_CLOUD_API_DOMAIN and BIO_S3_BUCKET_NAME in development mode
+      const env = {
+        NODE_ENV: "development",
+        [`${PASSTHROUGH_PREFIX}SECRET_KEY`]: "test-secret-key",
+      };
+
+      expect(() => createEnvReplacements(env, true, "development")).not.toThrow();
+    });
+
+    test("createEnvReplacements does not throw when strictCheck is true and required env vars are missing in test mode", () => {
+      // Missing EO_CLOUD_API_DOMAIN and BIO_S3_BUCKET_NAME in test mode
+      const env = {
+        NODE_ENV: "test",
+        [`${PASSTHROUGH_PREFIX}SECRET_KEY`]: "test-secret-key",
+      };
+
+      expect(() => createEnvReplacements(env, true, "test")).not.toThrow();
+    });
+
+    test("createEnvReplacements throws in development mode when FORCE_ENV_CHECK is true", () => {
+      process.env.FORCE_ENV_CHECK = "true";
+      // Missing EO_CLOUD_API_DOMAIN and BIO_S3_BUCKET_NAME
+      const env = {
+        NODE_ENV: "development",
+        [`${PASSTHROUGH_PREFIX}SECRET_KEY`]: "test-secret-key",
+      };
+
+      expect(() => createEnvReplacements(env, true, "development")).toThrowError(
+        /Required environment variable (EO_CLOUD_API_DOMAIN|BIO_S3_BUCKET_NAME) is missing or empty/
+      );
+      process.env.FORCE_ENV_CHECK = undefined;
     });
 
     test("createEnvReplacements does not throw when strictCheck is true and all required env vars are present", () => {
@@ -191,6 +225,56 @@ describe("env-config", () => {
       };
 
       expect(() => createEnvReplacements(env, true)).not.toThrow();
+    });
+
+    // Add these tests to cover more branches
+    test("createEnvReplacements strictCheck is true but no env vars missing", () => {
+      const env = {
+        EO_CLOUD_API_DOMAIN: "test.example.com",
+        BIO_S3_BUCKET_NAME: "test-bucket",
+        NODE_ENV: "development",
+      };
+
+      expect(() => createEnvReplacements(env, true, "development")).not.toThrow();
+      // No warnings should be produced because no vars are missing
+    });
+
+    test("createEnvReplacements with default mode parameter", () => {
+      process.env.NODE_ENV = "production";
+      const env = {
+        EO_CLOUD_API_DOMAIN: "test.example.com",
+        BIO_S3_BUCKET_NAME: "test-bucket",
+      };
+
+      // This should use the default mode from process.env.NODE_ENV which is 'production'
+      // and since all required vars are present, it should not throw
+      expect(() => createEnvReplacements(env, true)).not.toThrow();
+    });
+
+    test("createEnvReplacements with explicit mode parameter overrides NODE_ENV", () => {
+      process.env.NODE_ENV = "production";
+      const env = {
+        // Missing required variables
+      };
+
+      // Even though NODE_ENV is production, we explicitly pass "development"
+      // which should prevent it from throwing
+      expect(() => createEnvReplacements(env, true, "development")).not.toThrow();
+    });
+
+    test("createEnvReplacements with strictCheck=false ignores mode completely", () => {
+      // When strictCheck is false, the mode should be ignored completely
+      process.env.FORCE_ENV_CHECK = "true";
+      process.env.NODE_ENV = "production";
+
+      const env = {
+        // Missing required variables
+      };
+
+      // Even though FORCE_ENV_CHECK=true and NODE_ENV=production, when strictCheck=false,
+      // it should never throw due to missing variables
+      expect(() => createEnvReplacements(env, false, "production")).not.toThrow();
+      process.env.FORCE_ENV_CHECK = undefined;
     });
   });
 

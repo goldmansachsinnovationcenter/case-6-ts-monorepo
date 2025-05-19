@@ -5,15 +5,15 @@
 /**
  * Prefix for environment variables that should not be replaced at build time
  */
-export const PASSTHROUGH_PREFIX = 'PASSTHROUGH_';
+export const PASSTHROUGH_PREFIX = "PASSTHROUGH_";
 
 /**
  * Standard environment variables used across the monorepo
  */
 export const ENV_VARS = {
-  EO_CLOUD_API_DOMAIN: 'EO_CLOUD_API_DOMAIN',
-  BIO_S3_BUCKET_NAME: 'BIO_S3_BUCKET_NAME',
-  NODE_ENV: 'NODE_ENV',
+  EO_CLOUD_API_DOMAIN: "EO_CLOUD_API_DOMAIN",
+  BIO_S3_BUCKET_NAME: "BIO_S3_BUCKET_NAME",
+  NODE_ENV: "NODE_ENV",
 } as const;
 
 /**
@@ -34,9 +34,9 @@ export const isPassthroughVar = (key: string): boolean => {
  * Environment modes
  */
 export enum EnvironmentMode {
-  Development = 'development',
-  Production = 'production',
-  Test = 'test',
+  Development = "development",
+  Production = "production",
+  Test = "test",
 }
 
 /**
@@ -45,8 +45,8 @@ export enum EnvironmentMode {
  */
 export const getEnvironmentMode = (): EnvironmentMode => {
   const nodeEnv = process.env.NODE_ENV;
-  if (nodeEnv === 'production') return EnvironmentMode.Production;
-  if (nodeEnv === 'test') return EnvironmentMode.Test;
+  if (nodeEnv === "production") return EnvironmentMode.Production;
+  if (nodeEnv === "test") return EnvironmentMode.Test;
   return EnvironmentMode.Development;
 };
 
@@ -56,8 +56,22 @@ export const getEnvironmentMode = (): EnvironmentMode => {
  * @param defaultValue Default value if the environment variable is not set
  * @returns The environment variable value or the default value
  */
-export const getEnvVar = (key: EnvVarKey, defaultValue: string = ''): string => {
+export const getEnvVar = (key: EnvVarKey, defaultValue: string = ""): string => {
   return process.env[key] || defaultValue;
+};
+
+/**
+ * Ensure an environment variable exists and throw an error if it doesn't
+ * @param key Environment variable key
+ * @returns The environment variable value
+ * @throws Error if the environment variable is not defined
+ */
+export const requireEnvVar = (key: EnvVarKey): string => {
+  const value = process.env[key];
+  if (value === undefined || value === "") {
+    throw new Error(`Required environment variable ${key} is missing or empty`);
+  }
+  return value;
 };
 
 /**
@@ -66,18 +80,53 @@ export const getEnvVar = (key: EnvVarKey, defaultValue: string = ''): string => 
  * @param defaultValue Default value if the environment variable is not set
  * @returns The environment variable value or the default value
  */
-export const getPassthroughVar = (key: string, defaultValue: string = ''): string => {
+export const getPassthroughVar = (key: string, defaultValue: string = ""): string => {
   return process.env[`${PASSTHROUGH_PREFIX}${key}`] || defaultValue;
 };
 
 /**
  * Create a map of environment variables for Vite's define option
  * @param env Environment variables object from Vite's loadEnv
+ * @param strictCheck Set to true to make the build fail if any non-passthrough env var is missing
+ * @param mode The current environment mode (development, production, test)
  * @returns Object with process.env.* keys mapped to JSON stringified values
+ * @throws Error if strictCheck is true and any non-passthrough env var is missing in production mode
  */
-export const createEnvReplacements = (env: Record<string, string>): Record<string, string> => {
+export const createEnvReplacements = (
+  envFromViteLoadEnv: Record<string, string>,
+  strictCheck: boolean = false,
+  mode: string = process.env.NODE_ENV || "development"
+): Record<string, string> => {
+  // Only apply strict checking in production mode or if explicitly requested
+  const shouldStrictCheck = strictCheck && (mode === "production" || process.env.FORCE_ENV_CHECK === "true");
+
+  if (shouldStrictCheck) {
+    // Check all ENV_VARS except NODE_ENV which has defaults
+    Object.values(ENV_VARS).forEach((key) => {
+      // Skip NODE_ENV which has defaults
+      if (key !== "NODE_ENV" && !isPassthroughVar(key)) {
+        const value = envFromViteLoadEnv[key];
+
+        // Throw error if the variable is missing or empty
+        if (!value) {
+          throw new Error(`Required environment variable ${key} is missing or empty`);
+        }
+      }
+    });
+  } else if (strictCheck && mode !== "production") {
+    // In non-production environments with strictCheck, warn but don't fail
+    Object.values(ENV_VARS).forEach((key) => {
+      if (key !== "NODE_ENV" && !isPassthroughVar(key)) {
+        const value = envFromViteLoadEnv[key];
+        if (!value) {
+          console.warn(`Warning: Environment variable ${key} is missing or empty (ignored in ${mode} mode)`);
+        }
+      }
+    });
+  }
+
   return Object.fromEntries(
-    Object.entries(env)
+    Object.entries(envFromViteLoadEnv)
       .filter(([key]) => !isPassthroughVar(key))
       .map(([key, value]) => [`process.env.${key}`, JSON.stringify(value)])
   );

@@ -60,72 +60,72 @@ jobs:
       - name: Run tests and collect coverage
         run: pnpm turbo test:coverage
 
-      - name: Install LCOV
-        run: sudo apt-get update && sudo apt-get install -y lcov
+      # - name: Install LCOV
+      #   run: sudo apt-get update && sudo apt-get install -y lcov
 
-      - name: Combine coverage reports
-        run: |
-          mkdir -p combined-coverage
-          OUTPUT_LCOV_FILE="combined-coverage/lcov.info"
+      # - name: Combine coverage reports
+      #   run: |
+      #     mkdir -p combined-coverage
+      #     OUTPUT_LCOV_FILE="combined-coverage/lcov.info"
 
-          # Find all lcov.info files and prepare arguments for lcov command
-          # -print0 and xargs -0 handle filenames with spaces/newlines (though unlikely for lcov.info)
-          # xargs -r ensures printf is not called if find returns no files.
-          # The result is a string like "-a path1 -a path2 " or empty.
-          LCOV_FILES_ARGS=$(find . -name "lcov.info" -not -path "./combined-coverage/*" -print0 | xargs -0 -r printf -- "-a %s ")
+      #     # Find all lcov.info files and prepare arguments for lcov command
+      #     # -print0 and xargs -0 handle filenames with spaces/newlines (though unlikely for lcov.info)
+      #     # xargs -r ensures printf is not called if find returns no files.
+      #     # The result is a string like "-a path1 -a path2 " or empty.
+      #     LCOV_FILES_ARGS=$(find . -name "lcov.info" -not -path "./combined-coverage/*" -print0 | xargs -0 -r printf -- "-a %s ")
 
-          if [ -n "$LCOV_FILES_ARGS" ]; then
-            # If files were found, combine them.
-            # Word splitting on $LCOV_FILES_ARGS is intentional here to pass args correctly.
-            lcov $LCOV_FILES_ARGS -o "$OUTPUT_LCOV_FILE" --rc branch_coverage=1 --ignore-errors source,empty
-            echo "Successfully combined lcov reports into $OUTPUT_LCOV_FILE"
-          else
-            # No lcov.info files found. Create a minimal valid lcov file.
-            # This helps subsequent steps like genhtml or artifact upload not to fail.
-            echo "No lcov.info files found. Creating a minimal report at $OUTPUT_LCOV_FILE"
-            echo "TN:" > "$OUTPUT_LCOV_FILE" # Test Name (optional)
-            echo "SF:no_coverage_data_found.dummy" >> "$OUTPUT_LCOV_FILE" # Source File (dummy)
-            echo "FNF:0" >> "$OUTPUT_LCOV_FILE" # Functions Not Found
-            echo "FNH:0" >> "$OUTPUT_LCOV_FILE" # Functions Hit
-            echo "LF:0" >> "$OUTPUT_LCOV_FILE"  # Lines Found
-            echo "LH:0" >> "$OUTPUT_LCOV_FILE"  # Lines Hit
-            echo "end_of_record" >> "$OUTPUT_LCOV_FILE"
-          fi
+      #     if [ -n "$LCOV_FILES_ARGS" ]; then
+      #       # If files were found, combine them.
+      #       # Word splitting on $LCOV_FILES_ARGS is intentional here to pass args correctly.
+      #       lcov $LCOV_FILES_ARGS -o "$OUTPUT_LCOV_FILE" --rc branch_coverage=1 --ignore-errors source,empty
+      #       echo "Successfully combined lcov reports into $OUTPUT_LCOV_FILE"
+      #     else
+      #       # No lcov.info files found. Create a minimal valid lcov file.
+      #       # This helps subsequent steps like genhtml or artifact upload not to fail.
+      #       echo "No lcov.info files found. Creating a minimal report at $OUTPUT_LCOV_FILE"
+      #       echo "TN:" > "$OUTPUT_LCOV_FILE" # Test Name (optional)
+      #       echo "SF:no_coverage_data_found.dummy" >> "$OUTPUT_LCOV_FILE" # Source File (dummy)
+      #       echo "FNF:0" >> "$OUTPUT_LCOV_FILE" # Functions Not Found
+      #       echo "FNH:0" >> "$OUTPUT_LCOV_FILE" # Functions Hit
+      #       echo "LF:0" >> "$OUTPUT_LCOV_FILE"  # Lines Found
+      #       echo "LH:0" >> "$OUTPUT_LCOV_FILE"  # Lines Hit
+      #       echo "end_of_record" >> "$OUTPUT_LCOV_FILE"
+      #     fi
 
-      - name: Generate HTML coverage report
-        run: genhtml combined-coverage/lcov.info --output-directory combined-coverage/html
+      # - name: Generate HTML coverage report
+      #   run: genhtml combined-coverage/lcov.info --output-directory combined-coverage/html
 
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: combined-coverage/html
-          retention-days: 7
+      # - name: Upload coverage report
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: coverage-report
+      #     path: combined-coverage/html
+      #     retention-days: 7
 
-      - name: Publish coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: combined-coverage-report
-          path: combined-coverage/html
-          retention-days: 7
+      # - name: Publish coverage report
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: combined-coverage-report
+      #     path: combined-coverage/html
+      #     retention-days: 7
 
-      - name: Coverage Report Summary
-        uses: irongut/CodeCoverageSummary@v1.3.0
-        with:
-          filename: combined-coverage/lcov.info # Ensure this path is correct
-          badge: true
-          fail_below_min: false
-          format: markdown
-          hide_branch_rate: false
-          hide_complexity: false
-          indicators: true
-          output: markdown # Changed from 'both' to 'markdown'
-          thresholds: "60 80"
+      # - name: Coverage Report Summary
+      #   uses: irongut/CodeCoverageSummary@v1.3.0
+      #   with:
+      #     filename: combined-coverage/lcov.info # Ensure this path is correct
+      #     badge: true
+      #     fail_below_min: false
+      #     format: markdown
+      #     hide_branch_rate: false
+      #     hide_complexity: false
+      #     indicators: true
+      #     output: markdown # Changed from 'both' to 'markdown'
+      #     thresholds: "60 80"
 
-      - name: Add Coverage PR Comment
-        uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request'
-        with:
-          header: Coverage Report
-          recreate: true
-          path: code-coverage-results.md # Ensure this file is generated by the previous step
+      # - name: Add Coverage PR Comment
+      #   uses: marocchino/sticky-pull-request-comment@v2
+      #   if: github.event_name == 'pull_request'
+      #   with:
+      #     header: Coverage Report
+      #     recreate: true
+      #     path: code-coverage-results.md # Ensure this file is generated by the previous step

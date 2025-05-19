@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@repo/ui": resolve(__dirname, "../../packages/ui/dist/ui.js"),
-      }
+      },
     },
     define: {
       ...envReplacement,

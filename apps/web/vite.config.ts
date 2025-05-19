@@ -9,12 +9,18 @@ import { isPassthroughVar, PASSTHROUGH_PREFIX, createEnvReplacements } from "@re
  * 1. Loads environment variables based on the current mode
  * 2. Replaces process.env references with actual values at build time
  * 3. Preserves variables with PASSTHROUGH_ prefix for runtime loading
+ * 4. Fails the build if required environment variables are missing
  */
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
   // Load environment variables based on the current mode
   const env = loadEnv(mode, process.cwd(), "VITE_");
 
-  const envReplacement = createEnvReplacements(env);
+  // Use strictCheck=true for production builds to make them fail when env vars are missing
+  const isProduction = mode === "production";
+  const isBuild = command === "build";
+  const useStrictCheck = isBuild; // Enable strict checking for all builds
+
+  const envReplacement = createEnvReplacements(env, useStrictCheck);
 
   const passthroughVars = Object.keys(env)
     .filter(isPassthroughVar)

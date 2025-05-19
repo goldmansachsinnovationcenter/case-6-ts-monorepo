@@ -9,6 +9,7 @@ import {
   getPassthroughVar,
   createEnvReplacements,
   EnvVarKey,
+  requireEnvVar,
 } from "./index";
 
 describe("env-config", () => {
@@ -132,5 +133,85 @@ describe("env-config", () => {
 
     const replacements = createEnvReplacements(env);
     expect(Object.keys(replacements).length).toBe(0);
+  });
+
+  // Tests for strict environment variable checking
+  describe("strict environment variable checking", () => {
+    test("createEnvReplacements does not throw when strictCheck is false and env vars are missing", () => {
+      // All required env vars missing
+      const env = {
+        [`${PASSTHROUGH_PREFIX}SECRET_KEY`]: "test-secret-key",
+      };
+
+      expect(() => createEnvReplacements(env, false)).not.toThrow();
+    });
+
+    test("createEnvReplacements throws when strictCheck is true and non-passthrough env vars are missing", () => {
+      // Missing EO_CLOUD_API_DOMAIN and BIO_S3_BUCKET_NAME
+      const env = {
+        NODE_ENV: "production", // NODE_ENV is allowed to be missing
+        [`${PASSTHROUGH_PREFIX}SECRET_KEY`]: "test-secret-key", // Passthrough vars are allowed to be missing
+      };
+
+      expect(() => createEnvReplacements(env, true)).toThrowError(
+        /Required environment variable (EO_CLOUD_API_DOMAIN|BIO_S3_BUCKET_NAME) is missing or empty/
+      );
+    });
+
+    test("createEnvReplacements throws when strictCheck is true and non-passthrough env vars are empty", () => {
+      // Empty EO_CLOUD_API_DOMAIN
+      const env = {
+        EO_CLOUD_API_DOMAIN: "", // Empty value should cause an error
+        BIO_S3_BUCKET_NAME: "test-bucket",
+        NODE_ENV: "production",
+        [`${PASSTHROUGH_PREFIX}SECRET_KEY`]: "test-secret-key",
+      };
+
+      expect(() => createEnvReplacements(env, true)).toThrowError(
+        "Required environment variable EO_CLOUD_API_DOMAIN is missing or empty"
+      );
+    });
+
+    test("createEnvReplacements does not throw when strictCheck is true and all required env vars are present", () => {
+      const env = {
+        EO_CLOUD_API_DOMAIN: "test.example.com",
+        BIO_S3_BUCKET_NAME: "test-bucket",
+        NODE_ENV: "production", // NODE_ENV is not strictly required
+        [`${PASSTHROUGH_PREFIX}SECRET_KEY`]: "", // Passthrough var is empty but that's ok
+      };
+
+      expect(() => createEnvReplacements(env, true)).not.toThrow();
+    });
+
+    test("createEnvReplacements does not throw when NODE_ENV is missing", () => {
+      const env = {
+        EO_CLOUD_API_DOMAIN: "test.example.com",
+        BIO_S3_BUCKET_NAME: "test-bucket",
+        // NODE_ENV is missing but that's ok
+      };
+
+      expect(() => createEnvReplacements(env, true)).not.toThrow();
+    });
+  });
+
+  describe("requireEnvVar function", () => {
+    test("requireEnvVar returns the value when environment variable exists", () => {
+      process.env.EO_CLOUD_API_DOMAIN = "test.example.com";
+      expect(requireEnvVar("EO_CLOUD_API_DOMAIN")).toBe("test.example.com");
+    });
+
+    test("requireEnvVar throws when environment variable is undefined", () => {
+      delete process.env.EO_CLOUD_API_DOMAIN;
+      expect(() => requireEnvVar("EO_CLOUD_API_DOMAIN")).toThrowError(
+        "Required environment variable EO_CLOUD_API_DOMAIN is missing or empty"
+      );
+    });
+
+    test("requireEnvVar throws when environment variable is empty", () => {
+      process.env.EO_CLOUD_API_DOMAIN = "";
+      expect(() => requireEnvVar("EO_CLOUD_API_DOMAIN")).toThrowError(
+        "Required environment variable EO_CLOUD_API_DOMAIN is missing or empty"
+      );
+    });
   });
 });

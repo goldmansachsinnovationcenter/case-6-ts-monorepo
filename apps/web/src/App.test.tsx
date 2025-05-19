@@ -1,5 +1,5 @@
 import React from "react";
-import { describe, test, expect, vi, beforeEach, afterEach, afterAll } from "vitest"; // Added afterEach
+import { describe, test, expect, vi, beforeEach, afterEach, afterAll } from "vitest";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import App, { AppEnvironment, AppModule } from "./App";

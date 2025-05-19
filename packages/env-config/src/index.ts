@@ -9,20 +9,15 @@
 export const PASSTHROUGH_PREFIX = "PASSTHROUGH_";
 
 /**
- * Standard environment variables used across the monorepo
- * These maintain the original variable names for compatibility with tests
+ * Vite environment variables used in the application
+ * These are prefixed with VITE_ for Vite compatibility
  */
-export const ENV_VARS = {
-  EO_CLOUD_API_DOMAIN: "EO_CLOUD_API_DOMAIN",
-  BIO_S3_BUCKET_NAME: "BIO_S3_BUCKET_NAME",
-  NODE_ENV: "NODE_ENV",
-} as const;
-
-// Internal mapping to Vite prefixed variables for runtime use
-const VITE_ENV_VARS: Record<string, string> = {
-  EO_CLOUD_API_DOMAIN: "VITE_EO_CLOUD_API_DOMAIN",
-  BIO_S3_BUCKET_NAME: "VITE_BIO_S3_BUCKET_NAME",
+const ENV_VARS: Record<string, string> = {
   NODE_ENV: "NODE_ENV", // NODE_ENV doesn't need a VITE_ prefix
+  PASSTHROUGH_LAMBDA_CREDENTIAL: "PASSTHROUGH_LAMBDA_CREDENTIAL",
+  VITE_APP_CLOUD_API_DOMAIN: "VITE_APP_CLOUD_API_DOMAIN",
+  VITE_LAMBDA_S3_BUCKET_NAME: "VITE_LAMBDA_S3_BUCKET_NAME",
+  VITE_LIB_ENV_NAME: "VITE_LIB_ENV_NAME",
 };
 
 /**
@@ -113,7 +108,7 @@ export const getEnvironmentMode = (): EnvironmentMode => {
  * @returns The environment variable value or the default value
  */
 export const getEnvVar = (key: EnvVarKey, defaultValue: string = ""): string => {
-  const envKey = ENV_VARS[key];
+  const envKey = VITE_ENV_VARS[key];
   const viteEnvKey = VITE_ENV_VARS[key];
 
   // Special case for NODE_ENV
@@ -183,7 +178,7 @@ export const createEnvReplacements = (
 
   // Check for missing required environment variables
   if (enforceCheck) {
-    for (const key of Object.keys(ENV_VARS)) {
+    for (const key of Object.keys(VITE_ENV_VARS)) {
       if (key === "NODE_ENV") continue; // NODE_ENV is not strictly required
       const value = env[key];
       if (value === undefined || value === "") {

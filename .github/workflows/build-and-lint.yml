@@ -48,6 +48,7 @@ jobs:
         env:
           NODE_ENV: production
           VITE_EO_CLOUD_API_DOMAIN: ci-api.example.com
+          EO_CLOUD_API_DOMAIN: ci-api.example.com # Added to provide the non-prefixed version
           VITE_BIO_S3_BUCKET_NAME: ci-example-bucket
           PASSTHROUGH_SOME_CREDENTIAL: this-will-not-be-replaced
 

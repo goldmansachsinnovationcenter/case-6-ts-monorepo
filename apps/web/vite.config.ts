@@ -1,5 +1,4 @@
 import { defineConfig, loadEnv, UserConfig } from "vite";
-import { resolve } from "path";
 import react from "@vitejs/plugin-react";
 import { isPassthroughVar, PASSTHROUGH_PREFIX, createEnvReplacements } from "@repo/env-config";
 
@@ -23,11 +22,6 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    resolve: {
-      alias: {
-        "@repo/ui": resolve(__dirname, "../../packages/ui/dist/ui.js"),
-      },
-    },
     define: {
       ...envReplacement,
       __PASSTHROUGH_VARS__: JSON.stringify(passthroughVars),

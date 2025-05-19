@@ -2,10 +2,13 @@
   "name": "@repo/ui",
   "version": "0.0.0",
   "private": true,
-  "main": "./dist/ui.js",
-  "module": "./dist/ui.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "vite build",
     "lint": "echo no lint",
@@ -36,9 +39,11 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/ui.js",
-      "require": "./dist/ui.js",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
-    }
-  }
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false
 }

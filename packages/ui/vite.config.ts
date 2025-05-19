@@ -15,7 +15,7 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, "src/index.ts"),
       name: "UI",
-      fileName: (format) => `ui.${format === "es" ? "js" : format}`,
+      fileName: "index",
       formats: ["es"],
     },
     rollupOptions: {
@@ -25,7 +25,6 @@ export default defineConfig({
           react: "React",
           "react-dom": "ReactDOM",
         },
-        // Don't use preserveModules as it can cause issues with dependency resolution
         preserveModules: false,
       },
     },

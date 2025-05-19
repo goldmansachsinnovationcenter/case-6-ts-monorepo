@@ -63,7 +63,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y lcov
 
       - name: Upload coverage reports as artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
           path: |
@@ -83,7 +83,7 @@ jobs:
           genhtml combined-coverage/lcov.info --output-directory combined-coverage/html
 
       - name: Publish coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: combined-coverage-report
           path: combined-coverage/html

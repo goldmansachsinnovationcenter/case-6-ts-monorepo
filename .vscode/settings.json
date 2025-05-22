@@ -1,0 +1,4 @@
+{
+  "vitest.disableWorkspaceWarning": true,
+  "github-actions.workflows.pinned.workflows": [".github/workflows/build-and-lint.yml"]
+}

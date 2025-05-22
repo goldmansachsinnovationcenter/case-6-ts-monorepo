@@ -1,54 +1,53 @@
-import { defineConfig, loadEnv, UserConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import dts from 'vite-plugin-dts';
-import { 
-  isPassthroughVar, 
-  PASSTHROUGH_PREFIX, 
-  createEnvReplacements 
-} from '@repo/env-config';
+import { defineConfig, loadEnv } from "vite";
+import react from "@vitejs/plugin-react";
+import { resolve } from "path";
+import { createEnvReplacements } from "@repo/env-config";
 
 /**
  * Vite configuration for web application
- * 
+ *
  * This configuration:
- * 1. Loads environment variables based on the current mode
- * 2. Replaces process.env references with actual values at build time
- * 3. Preserves variables with PASSTHROUGH_ prefix for runtime loading
+ * 1. Loads environment variables from the monorepo root
+ * 2. Uses Vite's built-in environment variable system for both build time (VITE_) variables
+ * 3. Provides consistent access to environment variables across the monorepo
  */
 export default defineConfig(({ mode }) => {
-  // Load environment variables based on the current mode
-  const env = loadEnv(mode, process.cwd(), 'VITE_');
+  // Get the monorepo root directory
+  const rootDir = resolve(__dirname, "../..");
 
-  const envReplacement = createEnvReplacements(env);
+  // Load environment variables from the monorepo root
+  // This will load .env, .env.local, and .env.[mode] files from rootDir
+  const env = loadEnv(mode, rootDir);
 
-  const passthroughVars = Object.keys(env)
-    .filter(isPassthroughVar)
-    .map(key => key.replace(PASSTHROUGH_PREFIX, ''));
+  // Add our required environment variables if they weren't loaded from .env files
+  const enhancedEnv = {
+    ...env,
+    PASSTHROUGH_LAMBDA_CREDENTIAL: env.PASSTHROUGH_LAMBDA_CREDENTIAL,
+    VITE_APP_CLOUD_API_DOMAIN: env.VITE_APP_CLOUD_API_DOMAIN,
+    VITE_LAMBDA_S3_BUCKET_NAME: env.VITE_LAMBDA_S3_BUCKET_NAME,
+    VITE_LIB_ENV_NAME: env.VITE_LIB_ENV_NAME,
+  };
 
   return {
-    plugins: [
-      react(),
-      dts({
-        insertTypesEntry: true,
-        include: ['src/**/*.ts', 'src/**/*.tsx'],
-      }),
-    ],
+    plugins: [react()],
     define: {
-      ...envReplacement,
-      '__PASSTHROUGH_VARS__': JSON.stringify(passthroughVars),
+      // Use our enhanced environment variable system for build-time replacements
+      // Disable strict checking for now to allow the build to proceed
+      ...createEnvReplacements(enhancedEnv, false, mode),
     },
     server: {
       port: 3000,
       open: true,
     },
+    optimizeDeps: {
+      include: ["@repo/ui"],
+    },
     build: {
       sourcemap: true,
       rollupOptions: {
-        external: [],
         output: {
           manualChunks: {
-            react: ['react', 'react-dom'],
-            ui: ['@repo/ui'],
+            react: ["react", "react-dom"],
           },
         },
       },

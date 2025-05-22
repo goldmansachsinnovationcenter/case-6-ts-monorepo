@@ -1,5 +1,5 @@
-export * from './button';
+export * from "./button";
 
 export const getApiUrl = () => {
-  return process.env.EO_CLOUD_API_DOMAIN || '';
+  return process.env.VITE_APP_CLOUD_API_DOMAIN || "";
 };

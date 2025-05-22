@@ -1,0 +1,1 @@
+{ "exclude": ["**/vite.config.ts", "**/*.config.{js,ts}", "**/*.setup.{js,ts}"] }
